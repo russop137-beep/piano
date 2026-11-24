@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Piano</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-title" content="Piano">
 <meta name="theme-color" content="#efe0b0">
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -44,6 +44,7 @@ nav button.on{color:var(--ink);font-weight:600;box-shadow:inset 0 3px 0 var(--in
 .dr{display:block;width:100%;text-align:left;font:inherit;background:var(--cd);border:1px solid var(--ln);padding:10px 12px;margin:8px 0;color:var(--ink);cursor:pointer}
 .dr small{display:block;color:var(--mu);font-size:16px}
 textarea{width:100%;height:120px;font:13px monospace;background:var(--cd);color:var(--ink);border:1px solid var(--ln)}
+.bt button.on{background:var(--ink);color:var(--bg)}
 .nv{display:flex;justify-content:space-between;align-items:center}.nv button{font-size:28px;background:none;border:0;color:var(--ink);padding:4px 12px}
 </style></head><body><main id="app"></main><nav><button id="n0" onclick="V(0)">Oggi</button><button id="n1" onclick="V(1)">Settimana</button></nav>
 <script>
@@ -83,10 +84,11 @@ A('p','verdure','Verdure',[ 'a piacere','a piacere',200,200]);A('d','verdure','V
 A('p','grassi','Olio extravergine',NM(0));I[I.length-1].g=[null,null,15,20];A('p','grassi','Olio extravergine (mensa)',[10,10,null,null]);A('d','grassi','Olio extravergine',[20,20,15,15]);
 // Mensa: proteine autorizzate
 A('p','carne','Pollo alla piastra',MS(100),{short:70});A('p','carne','Vitello alla piastra',MS(100),{short:70});
-A('p','formaggio','Primosale',MS('2 fette'));A('p','formaggio','Camoscio d\'Oro + Auricchio',MS('1 fetta ciascuno'));A('p','formaggio','Stracchino',MS(90));
+A('p','formaggio','Primosale',MS('2 fette = 1 porzione'));A('p','formaggio','Camoscio d\'Oro + Auricchio',MS('1 fetta ciascuno = 1 porzione'));A('p','formaggio','Stracchino',MS(90));
 A('p','latticino','Philadelphia protein (mensa)',MS(100));A('p','latticino','Yogurt bianco',MS(125));
 A('p','bonus','Insalatona bonus',MS('-'),{nt:'Esclusa dai conteggi; solo ripiego'});
 // Merenda
+A('m','altro','Barretta proteica','1 barretta');
 A('m','frutta','Frutta fresca',[350,250,300,300]);
 ['Fiocchi di avena','Farine integrali'].forEach(n=>A('m','carb',n,[40,30,30,30]));
 A('m','carb','Crackers integrali',25);['Pane integrale','Pane di segale'].forEach(n=>A('m','carb',n,[60,50,50,50]));
@@ -104,7 +106,7 @@ A('d','legumi','Legumi in scatola (scolati)',300,{red:[100,80,110,80]});
 A('d','sec','Secondo: Parmigiano 20 g',0,{slot:1});A('d','sec','Secondo: 1 uovo',0,{slot:1,eggs:1});A('d','sec','Secondo: Philadelphia protein 40 g',0,{slot:1,latt:1});A('d','sec','Secondo: affettato magro 50 g',0,{slot:1});A('d','sec','Secondo: 1 scatoletta di tonno',0,{slot:1,pesce:1});
 I.forEach(i=>{if(i.c=='sec')i.g=['','','','']});
 const IM={};I.forEach(i=>IM[i.id]=i);
-const CL={carb:'Carboidrati',carne:'Carne',pesce:'Pesce',uova:'Uova',albume:'Albumi',legumi:'Legumi',formaggio:'Formaggi',latticino:'Latticini',affettato:'Affettati',frutta:'Frutta',fsecca:'Frutta secca',grassi:'Grassi e dolci',verdure:'Verdure',sec:'Secondo dimezzato (con i legumi)',bonus:'Bonus'};
+const CL={carb:'Carboidrati',carne:'Carne',pesce:'Pesce',uova:'Uova',albume:'Albumi',legumi:'Legumi',formaggio:'Formaggi',latticino:'Latticini',affettato:'Affettati',frutta:'Frutta',fsecca:'Frutta secca',grassi:'Grassi e dolci',verdure:'Verdure',sec:'Secondo dimezzato (con i legumi)',bonus:'Bonus',altro:'Altro'};
 const MN={c:'Colazione',s:'Spuntino',p:'Pranzo',m:'Merenda',d:'Cena'},MO=['c','s','p','m','d'];
 // ===== STATO =====
 let S={days:{}};try{S=JSON.parse(localStorage.getItem('pa'))||S}catch(e){}
@@ -117,23 +119,44 @@ const dd=k=>{if(!S.days[k])S.days[k]={t:0,m:0,sel:{},eat:{},free:{}};return S.da
 const ix=d=>(d.m?0:2)+(d.t?0:1);
 const gi=(d,m)=>(d.sel[m]||[]).map(i=>IM[i]).filter(Boolean);
 const fg=g=>typeof g=='number'?g+' g':g;
-function gr(i,m,d){const x=ix(d);if(m=='d'&&i.c=='carb'){const l=gi(d,'d').find(y=>y.red);if(l)return l.red[x]}return i.g[x]}
+function gr(i,m,d){const x=ix(d);let g=i.g[x];if(m=='d'&&i.c=='carb'){const l=gi(d,'d').find(y=>y.red);if(l)g=l.red[x]}
+if(d.mit=='x15'&&(m=='m'||m=='d')&&typeof g=='number'&&['carne','pesce','affettato','formaggio','latticino','albume'].includes(i.c)&&!d.free.p&&gi(d,'p').some(y=>y.short))g=Math.round(g*1.5);return g}
 function fl(m,its){const f={carne:0,pesce:0,legumi:0,form:0,latt:0,e:0,sec:0};for(const i of its){if(m=='p'||m=='d'){if(i.c=='carne')f.carne=1;if(i.c=='pesce'||i.pesce)f.pesce=1;if(i.c=='legumi')f.legumi=1}
 if(i.c=='formaggio'||i.slot)f.form=1;if(i.c=='latticino'||i.latt)f.latt=1;if(i.c=='sec')f.sec=1;f.e+=i.eggs||0}return f}
 function tot(ds,skip){const T={p:{carne:0,pesce:0,legumi:0,e:0},c:{carne:0,pesce:0,legumi:0,e:0},fr:0};
 ds.forEach(x=>{const k=K(x);if(k==skip)return;const d=dg(k);MO.forEach(m=>{if(d.free[m]){T.fr++;return}const f=fl(m,gi(d,m));['carne','pesce','legumi','e'].forEach(a=>{T.p[a]+=f[a];if(d.eat[m])T.c[a]+=f[a]})})});return T}
-// ===== SUGGERIMENTO DETERMINISTICO =====
-const fi=(n,m,x)=>{const i=I.find(i=>i.n==n&&i.m.includes(m)&&i.g[x]!=null);return i&&i.id};
-function sug(k){const d=dd(k),x=ix(d),ds=wk(D(k));const mk=(m,ns)=>{d.sel[m]=ns.map(n=>fi(n,m,x)).filter(Boolean)};
-if(!d.free.p)d.sel.p=[];if(!d.free.d)d.sel.d=[];let o=tot(ds).p;
-if(!(d.sel.c||[]).length&&o.e<6)mk('c',['Uovo intero','Pane integrale']);
-if(!(d.sel.s||[]).length)mk('s',['Frutta fresca']);if(!(d.sel.m||[]).length)mk('m',['Frutta fresca']);
-let lf=0;
-if(!d.free.p){let pr;if(d.t&&o.carne<2)pr=d.m?'Pollo alla piastra':'Pollo - petto';else if(!d.t){pr=d.m?'Primosale':'Pecorino';lf=1}else if(d.m){pr='Primosale';lf=1}else pr='Merluzzo o nasello';
-mk('p',d.m?['Riso in bianco',pr,'Verdure','Olio extravergine (mensa)']:['Riso (media)',pr,'Verdure','Olio extravergine'])}
-o=tot(ds).p;
-if(!d.free.d){let pr,ex=[],c='Pasta di semola';if(o.pesce<3)pr='Merluzzo o nasello';else if(o.legumi<3){pr='Legumi secchi';ex=[lf?'Secondo: 1 uovo':'Secondo: Parmigiano 20 g']}else if(o.e<6)pr='Uovo intero';else pr='Merluzzo o nasello';
-mk('d',[c,pr,...ex,'Verdure','Olio extravergine'])}
+// ===== SUGGERIMENTO DETERMINISTICO (con rotazione) =====
+const addD=(k,n)=>{const x=D(k);x.setDate(x.getDate()+n);return K(x)};
+const fam=i=>{const n=i.n.toLowerCase();if(/^pasta/.test(n))return'pasta';if(n.includes('riso'))return'riso';if(n.includes('yogurt'))return'yogurt';if(i.c=='affettato')return'affettato';if(/wasa|gallette|crackers/.test(n))return'snack';if(/^pane/.test(n))return'pane';return n};
+function pen(k,mid,i){let p=0;const W={1:10,2:4,3:2};[-3,-2,-1,1,2].forEach(o=>{const d=dg(addD(k,o));if(d.free[mid])return;const w=W[Math.abs(o)];gi(d,mid).forEach(j=>{if(j.n==i.n)p+=w+2;else if(j.c==i.c&&fam(j)==fam(i))p+=w})});return p}
+const SK=['carb','latticino','affettato','carne','pesce','legumi','uova'];
+function same(d,mid,i){return SK.includes(i.c)&&MO.some(m=>m!=mid&&gi(d,m).some(j=>j.c==i.c&&fam(j)==fam(i)))?10:0}
+function chk(d,mid,i){const t=MO.filter(m=>!d.free[m]).map(m=>fl(m,m==mid?gi(d,m).concat(i):gi(d,m)));return t.filter(f=>f.form).length<=1&&t.filter(f=>f.latt).length<=2}
+function pick(d,k,mid,f,nc){const x=ix(d),w=(D(k).getDay()+6)%7,sd={c:1,s:2,p:3,m:4,d:5}[mid];
+const c=I.filter(i=>i.m.includes(mid)&&i.g[x]!=null&&f(i)&&(nc||chk(d,mid,i)));if(!c.length)return null;
+let best=null,bs=1e9;c.forEach((i,q)=>{const sc=(pen(k,mid,i)+same(d,mid,i))*1000+(((q-(w*5+sd*3))%c.length)+c.length)%c.length;if(sc<bs){bs=sc;best=i}});return best}
+const PAT={d:['pesce','legumi','latticino','pesce','legumi','pesce','legumi'],c:['uova','latticino','affettato','uova','latticino','uova','affettato']};
+function sug(k){const d=dd(k),w=(D(k).getDay()+6)%7,ds=wk(D(k)),o=()=>tot(ds).p;
+MO.forEach(m=>{if(!d.free[m]&&!d.eat[m])d.sel[m]=[]});d.mit=null;d.mitIds=[];
+const lk=m=>d.free[m]||d.eat[m],A1=(m,f,nc)=>{if(lk(m))return null;const i=pick(d,k,m,f,nc);if(i)d.sel[m].push(i.id);return i};
+const n=o(),dl=7-w;let dc=PAT.d[w];
+if(dc=='legumi'&&n.legumi>=3)dc='pesce';
+if(n.pesce<3&&3-n.pesce>=dl)dc='pesce';else if(n.legumi<3&&3-n.legumi>=dl)dc='legumi';
+let pc=d.t&&n.carne<2?'carne':d.t&&!d.m?'pesce':'formaggio';if(pc=='formaggio'&&dc=='legumi')pc='latticino';
+// pranzo: carboidrato + proteina + verdure + olio
+A1('p',i=>i.c=='carb');A1('p',i=>i.c==pc);A1('p',i=>i.c=='verdure');A1('p',i=>i.c=='grassi');
+// cena
+const lg=A1('d',i=>i.c==dc);if(!(lg&&lg.pl))A1('d',i=>i.c=='carb');
+if(lg&&lg.c=='legumi'){const sf=i=>i.c=='sec'&&!(i.eggs&&o().e>=8);if(!A1('d',sf))A1('d',sf,1)}
+A1('d',i=>i.c=='verdure');A1('d',i=>i.c=='grassi');
+// colazione: carboidrato + zucchero + grasso + proteina
+const e=o().e;let bc=PAT.c[w];if(bc=='uova'&&e+2>8)bc='affettato';if(e<6&&6-e>=2*dl)bc='uova';
+A1('c',i=>i.c=='carb');A1('c',i=>['Marmellata','Miele','Frutta fresca'].includes(i.n));
+A1('c',i=>['Crema di frutta secca','Cioccolato fondente','Avocado','Olio extravergine'].includes(i.n));A1('c',i=>i.c==bc);
+// spuntino: frutta secca + frutta
+A1('s',i=>i.c=='fsecca'||i.n=='Crema di frutta secca');A1('s',i=>i.c=='frutta');
+// merenda: frutta o carboidrato + proteina + grasso/frutta secca
+A1('m',i=>i.c=='frutta'||i.c=='carb');A1('m',i=>['affettato','albume','latticino','pesce','formaggio'].includes(i.c));A1('m',i=>i.c=='fsecca'||i.c=='grassi');
 sv()}
 // ===== VISTE =====
 let view=0,cur=K(new Date()),wo=0,sheet=null,bk='';
@@ -146,22 +169,27 @@ function ea(m){const d=dd(cur);d.eat[m]=!d.eat[m];sv();r()}
 function fr(m){const d=dd(cur);d.free[m]=!d.free[m];sv();r()}
 function dy(n){const x=D(cur);x.setDate(x.getDate()+n);cur=K(x);r()}
 function go(k){cur=k;view=0;r()}
-function sd(k){sug(k);r()}function sw(){wk(new Date(),wo).forEach(x=>sug(K(x)));r()}
+function sd(k){sug(k);r()}function sw(){const ds=wk(new Date(),wo);ds.forEach(x=>{const d=dd(K(x));MO.forEach(m=>{if(!d.free[m]&&!d.eat[m])d.sel[m]=[]})});ds.forEach(x=>sug(K(x)));r()}
 function mealCard(d,m){const its=gi(d,m),x=ix(d);let h=`<section class="card ${d.eat[m]?'eaten':''}"><div class=mh><b>${MN[m]}</b>${d.free[m]?'<span class=tag>pasto libero</span>':''}<span class="${d.eat[m]?'ok':'mu'}">${d.eat[m]?'✓ mangiato':'pianificato'}</span></div>`;
 if(d.free[m])h+='<p class=mu>Usa uno dei 2 pasti liberi. Escluso da grammature e conteggi.</p>';
 else{if(!its.length)h+='<p class=mu>Nessun alimento scelto.</p>';
-its.forEach(i=>{const g=gr(i,m,d),nt=Array.isArray(i.nt)?i.nt[x]:i.nt;h+=`<div class=it><span>${i.n}${nt?`<em>${nt}</em>`:''}</span><span class="g ${g==null?'ko':''}">${g==null?'✕ non previsto qui':fg(g)}</span><button class=x aria-label="Rimuovi" onclick="rm('${m}','${i.id}')">×</button></div>`});
+its.forEach(i=>{const g=gr(i,m,d),nt=Array.isArray(i.nt)?i.nt[x]:i.nt;h+=`<div class=it><span>${i.n}${nt?`<em>${nt}</em>`:''}</span><span class="g ${g==null?'ko':''}">${g==null?'✕ non previsto qui':fg(g)+(d.mit=='x15'&&g!==i.g[x]&&i.c!='carb'?' ×1,5':'')}</span><button class=x aria-label="Rimuovi" onclick="rm('${m}','${i.id}')">×</button></div>`});
 const sh=gi(d,'p').some(i=>i.short)&&!d.free.p;
-if(sh&&(m=='m'||m=='d'))h+='<div class=w>⚠ Integra +35 g di proteine: il pranzo in mensa ha 100 g invece di 170 g.</div>';
+if(sh&&(m=='m'||m=='d'))h+=mitBox(d);
 if(m=='d'){const f=fl('d',its);if(f.legumi&&!f.sec)h+='<div class=w>⚠ Con i legumi aggiungi un secondo dimezzato e riduci i cereali.</div>';
 const lg=its.find(i=>i.red);if(lg)h+='<div class=w>ℹ Cereali ridotti a '+fg(lg.red[x])+' (legumi).</div>'}}
 h+=`<div class=bt>${d.free[m]?'':`<button onclick="sheet='${m}';r()">+ Aggiungi</button>`}<button onclick="ea('${m}')">${d.eat[m]?'Annulla mangiato':'Segna mangiato'}</button><button onclick="fr('${m}')">${d.free[m]?'Non libero':'Pasto libero'}</button></div></section>`;return h}
+const fiN=(n,m)=>(I.find(i=>i.n==n&&i.m.includes(m))||{}).id;
+function mit(v){const d=dd(cur);d.sel.m=(d.sel.m||[]).filter(i=>!(d.mitIds||[]).includes(i));d.mitIds=[];
+if(d.mit==v)d.mit=null;else{d.mit=v;const id=v=='shaker'?fiN('Proteine in polvere','m'):v=='barretta'?fiN('Barretta proteica','m'):null;if(id){d.sel.m.push(id);d.mitIds=[id]}}sv();r()}
+function mitBox(d){const o=[['shaker','Shaker proteico a merenda (proteine in polvere 20 g)'],['barretta','Barretta proteica a merenda'],['x15','Proteine ×1,5 a merenda e a cena']];
+return `<div class=w>⚠ Pranzo in mensa a 100 g invece di 170 g: mancano circa 70 g di proteine. Come compensi?<div class=bt>${o.map(a=>`<button class="${d.mit==a[0]?'on':''}" onclick="mit('${a[0]}')">${d.mit==a[0]?'✓ ':''}${a[1]}</button>`).join('')}</div></div>`}
 function oggi(){const d=dg(cur),dt=D(cur);let h=`<div class=nv><button onclick="dy(-1)" aria-label="Giorno precedente">‹</button><h1>${dt.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'})}</h1><button onclick="dy(1)" aria-label="Giorno successivo">›</button></div>
 <p class=sub>${d.t?'Allenamento':'Riposo'}, pranzo ${d.m?'in mensa':'fuori mensa'}</p>
 <div class=seg><button class="${d.t?'on':''}" onclick="tg('t',1)">Allenamento</button><button class="${!d.t?'on':''}" onclick="tg('t',0)">Riposo</button></div>
 <div class=seg><button class="${d.m?'on':''}" onclick="tg('m',1)">Pranzo in mensa</button><button class="${!d.m?'on':''}" onclick="tg('m',0)">Pranzo fuori</button></div>`;
-const fm=MO.filter(m=>!d.free[m]&&fl(m,gi(d,m)).form).length,lt=MO.filter(m=>!d.free[m]&&fl(m,gi(d,m)).latt).length;
-if(fm>1)h+=`<div class=r>✕ Formaggi in ${fm} pasti oggi (massimo 1).</div>`;if(lt>2)h+=`<div class=r>✕ Latticini in ${lt} pasti oggi (massimo 2).</div>`;
+const fm=MO.filter(m=>!d.free[m]&&fl(m,gi(d,m)).form),lt=MO.filter(m=>!d.free[m]&&fl(m,gi(d,m)).latt),nm=a=>a.map(m=>MN[m].toLowerCase()).join(', ');
+if(fm.length>1)h+=`<div class=r>✕ Formaggi in ${fm.length} pasti (${nm(fm)}): massimo 1 al giorno.</div>`;if(lt.length>2)h+=`<div class=r>✕ Latticini in ${lt.length} pasti (${nm(lt)}): massimo 2 al giorno.</div>`;
 h+=`<div class=bt><button class="b" onclick="sd('${cur}')">Proponi la giornata</button></div>`;
 MO.forEach(m=>h+=mealCard(d,m));return h}
 function settimana(){const ds=wk(new Date(),wo),T=tot(ds),P=T.p,C=T.c;
